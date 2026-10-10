@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Test</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 20px auto;
+        padding: 0 20px;
+        max-width: 900px;
+        background-color: #a097d3;
+      }
+
+      .card {
+        background: #fff;
+        border-radius: 8px;
+        padding: 20px;
+        border-radius: rgb(167, 28, 172);
+        border-width: 3px;
+        border-style: solid;
+        margin-bottom: 8px;
+      }
+
+      input,
+      select,
+      textarea {
+        width: 100%;
+        padding: 8px 10px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        margin-bottom: 8px;
+      }
+      textarea {
+        min-height: 150px;
+      }
+      .row {
+        display: flex;
+        gap: 10px;
+      }
+      .row > div {
+        flex: 1;
+      }
+      button {
+        background: #9b06c0;
+        color: #fff;
+        padding: 10px 20px;
+        border-radius: 6px;
+      }
+      button:hover {
+        background: #d81daf;
+      }
+      .status {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-weight: 700;
+        font-size: 13px;
+        margin-bottom: 10px;
+      }
+      .status.ok {
+        background: #dcfce7;
+        color: #166534;
+      }
+      .status.err {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+      pre {
+        background: #1e293b;
+        color: #e2e8f0;
+        padding: 14px;
+        border-radius: 6px;
+        overflow-x: auto;
+        font-size: 13px;
+        max-height: 400px;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Тестовая страница</h1>
+    <div class="card">
+      <div class="row">
+        <div>
+          <h3>Метод</h3>
+          <select id="method">
+            <option>GET</option>
+            <option>POST</option>
+            <option>PUT</option>
+            <option>DELETE</option>
+          </select>
+        </div>
+        <div style="flex: 3">
+          <h3>URL</h3>
+          <input id="url" value="http://localhost:3000/api/users" />
+        </div>
+      </div>
+      Примеры: /users, /users/1, /categories, /products, /orders, /reviews,
+      /order_items
+
+      <h3>Тело запроса (JSON, для POST/PUT)</h3>
+      <textarea id="body">
+        {
+        "email": "test@test.com",
+        "password": "12345",
+        "first_name": "Ivan",
+        "last_name": "Ivanov",
+        "avatar": "avatar.png"
+        }
+        </textarea
+      >
+
+      <div class="card">
+        <h3 style="margin-top: 0">Ответ</h3>
+        <div id="status"></div>
+        <pre id="output">Здесь будет ответ сервера…</pre>
+      </div>
+
+      <button id="send">Отправить</button>
+    </div>
+
+    <script>
+      const $method = document.getElementById("method");
+      const $url = document.getElementById("url");
+      const $body = document.getElementById("body");
+      const $send = document.getElementById("send");
+      const $status = document.getElementById("status");
+      const $output = document.getElementById("output");
+
+      $send.addEventListener("click", async () => {
+        const method = $method.value;
+        const url = $url.value.trim();
+        const bodyText = $body.value.trim();
+
+        const options = {
+          method,
+          headers: { "Content-Type": "application/json" },
+        };
+
+        // Тело нужно только для POST и PUT
+        if ((method === "POST" || method === "PUT") && bodyText) {
+          try {
+            JSON.parse(bodyText); // проверка на валидный JSON
+            options.body = bodyText;
+          } catch (e) {
+            $status.className = "status err";
+            $status.textContent = "Ошибка: невалидный JSON в теле запроса";
+            $output.textContent = e.message;
+            $send.disabled = false;
+            return;
+          }
+        }
+
+        try {
+          const res = await fetch(url, options);
+          const text = await res.text();
+
+          let data;
+          try {
+            data = JSON.parse(text);
+          } catch {
+            data = text;
+          }
+
+          const ok = res.ok;
+          $status.className = "status " + (ok ? "ok" : "err");
+          $status.textContent = `${res.status} ${res.statusText}`;
+
+          $output.textContent =
+            typeof data === "string" ? data : JSON.stringify(data, null, 2);
+        } catch (err) {
+          $status.className = "status err";
+          $status.textContent = "Сетевая ошибка";
+          $output.textContent = err.message;
+        } finally {
+          $send.disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>
